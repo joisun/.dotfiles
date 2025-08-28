@@ -38,6 +38,11 @@ brew bundle --file ./Brewfile
 mkdir ~/Desktop/workspace
 mkdir ~/Desktop/space
 
+# Install  pnpm
+if test ! $(which n); then
+  /bin/sh -c "$(curl -fsSL https://get.pnpm.io/install.sh)"
+fi
+
 
 # Clone Github repositories
 ./clone.sh

@@ -5,6 +5,7 @@ tap 'stripe/stripe-cli'        # Stripe 官方命令行工具的源
 
 # Binaries
 brew 'bash'           # 最新版 Bash shell，macOS 自带的版本较旧
+brew 'n'              # node version manager
 brew 'coreutils'      # GNU 核心工具集，macOS 自带的版本较旧
 brew 'git'            # 版本控制工具 Git
 brew 'grep'           # 文本搜索工具，GNU 版本功能更强
