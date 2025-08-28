@@ -1,0 +1,242 @@
+#!/bin/zsh
+
+# 脚本用于总结过去指定天数内各个项目的Git提交日志
+# 使用方法: ./git_log_summary.sh <天数> [目录] [选项]
+# 示例: ./git_log_summary.sh 7 /path/to/projects
+# 选项:
+#   -r            递归扫描子目录（默认不递归）
+#   --show-merge  显示merge提交信息（默认隐藏）
+#   --help        显示帮助信息
+
+# 显示帮助信息
+show_help() {
+    echo "Git提交日志汇总脚本"
+    echo ""
+    echo "使用方法: $0 <天数> [目录] [选项]"
+    echo ""
+    echo "参数:"
+    echo "  <天数>        要统计的天数（必需）"
+    echo "  [目录]        要扫描的目录（可选，默认为当前目录）"
+    echo ""
+    echo "选项:"
+    echo "  -r            递归扫描子目录中的 Git 仓库"
+    echo "  --show-merge  显示merge提交信息（默认隐藏）"
+    echo "  --help        显示此帮助信息"
+    echo ""
+    echo "示例:"
+    echo "  $0 7                    # 统计当前目录及直接子目录最近7天的提交"
+    echo "  $0 14 /path/to/projects -r # 递归统计指定目录最近14天的提交"
+    echo "  $0 7 . --show-merge     # 统计最近7天的提交，包括merge信息"
+    exit 0
+}
+
+# 解析参数
+SHOW_MERGE=false
+RECURSIVE=false
+DAYS=""
+BASE_DIR=""
+
+for arg in "$@"; do
+    case $arg in
+        --help)
+            show_help
+            ;;
+        -r)
+            RECURSIVE=true
+            ;;
+        --show-merge)
+            SHOW_MERGE=true
+            ;;
+        *)
+            if [ -z "$DAYS" ]; then
+                DAYS="$arg"
+            elif [ -z "$BASE_DIR" ]; then
+                BASE_DIR="$arg"
+            fi
+            ;;
+    esac
+done
+
+if [ -z "$DAYS" ]; then
+    echo "错误: 必须指定天数"
+    echo "使用 $0 --help 查看帮助信息"
+    exit 1
+fi
+
+# 验证天数是否为数字
+if ! [[ "$DAYS" =~ ^[0-9]+$ ]]; then
+    echo "错误: 天数必须是正整数"
+    exit 1
+fi
+
+BASE_DIR=${BASE_DIR:-"."}
+
+# 判断是否为merge提交
+is_merge_commit() {
+    local message="$1"
+    if [[ "$message" =~ ^[Mm]erge.*$ ]] || \
+       [[ "$message" =~ ^[Aa]uto.*merge.*$ ]] || \
+       [[ "$message" =~ .*into.*from.*$ ]] || \
+       [[ "$message" =~ ^[Pp]ull.*request.*$ ]]; then
+        return 0
+    fi
+    return 1
+}
+
+# ===== 修改开始 =====
+# 提取任务/主题标签
+extract_topic() {
+    local message="$1"
+    local topic=""
+
+    # 1. 查找第一个形如 #tag:value 的部分。
+    #    关键在于 `[^#]*`，它会匹配直到下一个'#'或字符串末尾的所有字符，
+    #    这能正确处理包含中文等多字节字符的情况。
+    local full_tag_and_value=$(echo "$message" | grep -oE '#[a-zA-Z][a-zA-Z0-9_-]*:[^#]*' | head -1)
+
+    if [ -n "$full_tag_and_value" ]; then
+        # 2. 从找到的字符串中，移除'#tag:'前缀，并去除首尾空格，得到纯净的value。
+        #    `s/^[^:]*://` 会删除从开头到第一个冒号的所有内容。
+        topic=$(echo "$full_tag_and_value" | sed -e 's/^[^:]*://' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    fi
+
+    if [ -z "$topic" ]; then
+        topic="未分类"
+    fi
+
+    echo "$topic"
+}
+# ===== 修改结束 =====
+
+# 获取指定天数前的日期
+SINCE_DATE=$(date -v-${DAYS}d +%Y-%m-%d)
+
+# 临时文件存储提交日志
+TEMP_FILE=$(mktemp)
+
+echo "收集 $DAYS 天内的提交日志..."
+if [ "$SHOW_MERGE" = false ]; then
+    echo "注意: 默认隐藏merge提交，使用 --show-merge 参数显示"
+fi
+
+# 根据是否递归设置find命令
+repo_list=""
+if [ "$RECURSIVE" = false ]; then
+    echo "提示: 默认只扫描直接子目录。使用 -r 选项进行递归扫描。"
+    repo_list=$(find "$BASE_DIR" -maxdepth 2 -type d -name ".git" -exec dirname {} \;)
+else
+    echo "提示: 正在进行递归扫描..."
+    repo_list=$(find "$BASE_DIR" -type d -name ".git" -exec dirname {} \;)
+fi
+
+# 查找所有git仓库并收集日志
+echo "$repo_list" | while read -r repo; do
+    [ -z "$repo" ] && continue
+
+    REPO_NAME=$(basename "$repo")
+    cd "$repo" || continue
+    
+    # 检查是否有提交
+    if git log --since="$SINCE_DATE" --oneline --quiet 2>/dev/null | head -1 > /dev/null; then
+        # 获取提交信息
+        git log --since="$SINCE_DATE" --format="%ad|%H" --date=short 2>/dev/null | while IFS='|' read -r commit_date commit_hash; do
+            if [ -n "$commit_date" ] && [ -n "$commit_hash" ]; then
+                # 获取完整的提交消息（包括多行）
+                commit_message=$(git log -1 --format="%B" "$commit_hash" 2>/dev/null | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                
+                # 提取任务/主题
+                topic=$(extract_topic "$commit_message")
+                
+                # 输出格式: date|topic|repo_name|message
+                if [ -n "$commit_message" ]; then
+                    echo "$commit_date|$topic|$REPO_NAME|$commit_message" >> "$TEMP_FILE"
+                fi
+            fi
+        done
+    fi
+    
+    cd - > /dev/null || exit
+done
+
+# 检查是否有数据
+if [ ! -s "$TEMP_FILE" ]; then
+    echo "在过去 $DAYS 天内没有找到提交记录"
+    rm "$TEMP_FILE"
+    exit 0
+fi
+
+# 按日期排序并格式化输出
+{
+    echo "# Git 提交日志汇总 (最近 $DAYS 天)"
+    echo "生成时间: $(date)"
+    echo ""
+    
+    # 使用临时文件进行数据处理
+    SORTED_FILE=$(mktemp)
+    sort -r "$TEMP_FILE" > "$SORTED_FILE"
+    
+    current_date=""
+    current_topic=""
+    current_repo=""
+    date_counter=1
+    topic_counter=1
+    repo_counter=1
+    commit_counter=1
+    
+    while IFS='|' read -r date topic repo message; do
+        # 跳过空行或不完整的行
+        if [ -z "$date" ] || [ -z "$message" ] || [ -z "$repo" ] || [ -z "$topic" ]; then
+            continue
+        fi
+        
+        # 清理数据
+        date=$(echo "$date" | tr -d ' ')
+        topic=$(echo "$topic" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        repo=$(echo "$repo" | tr -d ' ')
+        message=$(echo "$message" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        
+        # 检查是否是新的日期
+        if [ "$current_date" != "$date" ]; then
+            current_date="$date"
+            echo "$date_counter. $current_date"
+            date_counter=$((date_counter + 1))
+            topic_counter=1
+            current_topic=""
+            current_repo=""
+        fi
+        
+        # 检查是否是新的任务主题
+        if [ "$current_topic" != "$topic" ]; then
+            current_topic="$topic"
+            echo "    $((date_counter-1)).$topic_counter [$topic]"
+            topic_counter=$((topic_counter + 1))
+            repo_counter=1
+            current_repo=""
+        fi
+        
+        # 检查是否是新的项目
+        if [ "$current_repo" != "$repo" ]; then
+            current_repo="$repo"
+            echo "        $((date_counter-1)).$((topic_counter-1)).$repo_counter $repo"
+            repo_counter=$((repo_counter + 1))
+            commit_counter=1
+        fi
+        
+        # 输出提交信息（过滤merge信息）
+        if [ "$SHOW_MERGE" = true ] || ! is_merge_commit "$message"; then
+            echo "            $((date_counter-1)).$((topic_counter-1)).$((repo_counter-1)).$commit_counter $message"
+            commit_counter=$((commit_counter + 1))
+        fi
+        
+    done < "$SORTED_FILE"
+    
+    # 清理临时文件
+    rm "$SORTED_FILE"
+    
+} < "$TEMP_FILE"
+
+# 清理临时文件
+rm "$TEMP_FILE"
+
+echo ""
+echo "日志汇总完成!"
