@@ -78,7 +78,7 @@ ZSH_CUSTOM=$DOTFILES
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(artisan git)
+plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -109,34 +109,21 @@ export LANG=en_US.UTF-8
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-# Herd injected PHP binary.
-export PHP_INI_SCAN_DIR="$HOME/Library/Application Support/Herd/config/php/":$PHP_INI_SCAN_DIR
+# @joi: pnpm setup
+export PNPM_HOME="/Users/$(whoami)/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
 
-# Herd injected NVM configuration
-export NVM_DIR="$HOME/Library/Application Support/Herd/config/nvm"
-
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-
-[[ -f "/Applications/Herd.app/Contents/Resources/config/shell/zshrc.zsh" ]] && builtin source "/Applications/Herd.app/Contents/Resources/config/shell/zshrc.zsh"
-
-# Herd injected PHP 7.4 configuration.
-export HERD_PHP_74_INI_SCAN_DIR="/Users/driesvints/Library/Application Support/Herd/config/php/74/"
-
-# Herd injected PHP 8.3 configuration.
-export HERD_PHP_83_INI_SCAN_DIR="/Users/driesvints/Library/Application Support/Herd/config/php/83/"
-
-# Herd injected PHP 8.2 configuration.
-export HERD_PHP_82_INI_SCAN_DIR="/Users/driesvints/Library/Application Support/Herd/config/php/82/"
-
-# Herd injected PHP 8.1 configuration.
-export HERD_PHP_81_INI_SCAN_DIR="/Users/driesvints/Library/Application Support/Herd/config/php/81/"
-
-# Herd injected PHP 8.0 configuration.
-export HERD_PHP_80_INI_SCAN_DIR="/Users/driesvints/Library/Application Support/Herd/config/php/80/"
-
-# Herd injected PHP binary.
-export PATH="/Users/driesvints/Library/Application Support/Herd/bin/":$PATH
+# @joi: n setup, 设置 N_PREFIX 环境变量，使 n 将 Node.js 安装到 ~/.n 目录而不是 /usr/local
+export N_PREFIX="$HOME/.n"
+# @joi: 将 ~/.n/bin 添加到 PATH 环境变量
+export PATH="$N_PREFIX/bin:$PATH"
 
 
-# Herd injected PHP 8.4 configuration.
-export HERD_PHP_84_INI_SCAN_DIR="/Users/driesvints/Library/Application Support/Herd/config/php/84/"
+# @joi: python 3.9
+export PATH="$PATH:$HOME/Library/Python/3.9/bin"
+
+# @joi: java maven 3.8.8
+export PATH="$PATH:$HOME/.m2/apache-maven-3.8.8/bin"
