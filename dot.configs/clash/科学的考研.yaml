@@ -6,8 +6,8 @@ log-level: info
 external-controller: '127.0.0.1:9090'
 proxies:
     - { name: 台湾SS-广州中转, type: ss, server: 8.134.82.65, port: 12114, cipher: aes-256-gcm, password: 2635aa3d-fe26-3d8d-8578-f0c44afe4da0, udp: true }
-    - { name: 广州中转-日本, type: ss, server: 8.134.82.65, port: 12112, cipher: aes-256-gcm, password: 2635aa3d-fe26-3d8d-8578-f0c44afe4da0, udp: true }
-    - { name: 中转-韩国, type: ss, server: 8.134.82.65, port: 12113, cipher: aes-256-gcm, password: 2635aa3d-fe26-3d8d-8578-f0c44afe4da0, udp: true }
+    - { name: 广州中转-日本, type: ss, server: aliyun.netflixcn.de, port: 12112, cipher: aes-256-gcm, password: 2635aa3d-fe26-3d8d-8578-f0c44afe4da0, udp: true }
+    - { name: 中转-韩国, type: ss, server: aliyun.netflixcn.de, port: 12113, cipher: aes-256-gcm, password: 2635aa3d-fe26-3d8d-8578-f0c44afe4da0, udp: true }
     - { name: 'US 9299', type: vmess, server: starv2.netflixcn.de, port: 28011, uuid: 2635aa3d-fe26-3d8d-8578-f0c44afe4da0, alterId: 0, cipher: auto, udp: true, tls: true, network: ws, ws-opts: { path: /djdjdj/jhh, headers: { Host: starv2.netflixcn.de } } }
     - { name: 中国台湾x0.0001, type: vmess, server: tttttw.aespa.tech, port: 14344, uuid: 2635aa3d-fe26-3d8d-8578-f0c44afe4da0, alterId: 0, cipher: auto, udp: true, tls: true, network: ws, ws-opts: { path: /cdn, headers: { Host: tttttw.aespa.tech } } }
     - { name: 瑞士, type: vmess, server: lsb.netflixcn.de, port: 41612, uuid: 2635aa3d-fe26-3d8d-8578-f0c44afe4da0, alterId: 0, cipher: auto, udp: true, tls: true, network: ws, ws-opts: { path: /djdjdj/jhh, headers: { Host: lsb.netflixcn.de } } }
@@ -23,6 +23,7 @@ proxy-groups:
     - { name: 自动选择, type: url-test, proxies: [台湾SS-广州中转, 广州中转-日本, 中转-韩国, 'US 9299', 中国台湾x0.0001, 瑞士, 香港CN2, 原生纯净日本-家庭宽带, 德-无限流量-流媒体-delux, '奥地利 起飞', 奥地利-2, 印度节点, 欧洲卢森堡-流媒体无限0.0001], url: 'http://www.gstatic.com/generate_204', interval: 86400 }
     - { name: 故障转移, type: fallback, proxies: [台湾SS-广州中转, 广州中转-日本, 中转-韩国, 'US 9299', 中国台湾x0.0001, 瑞士, 香港CN2, 原生纯净日本-家庭宽带, 德-无限流量-流媒体-delux, '奥地利 起飞', 奥地利-2, 印度节点, 欧洲卢森堡-流媒体无限0.0001], url: 'http://www.gstatic.com/generate_204', interval: 7200 }
 rules:
+    - 'DOMAIN-KEYWORD,simboss,DIRECT'
     - 'DOMAIN-SUFFIX,services.googleapis.cn,SELECT'
     - 'DOMAIN-SUFFIX,xn--ngstr-lra8j.com,SELECT'
     - 'DOMAIN,safebrowsing.urlsec.qq.com,DIRECT'

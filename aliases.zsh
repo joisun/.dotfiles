@@ -13,7 +13,7 @@ alias projects="cd $HOME/Code"
 alias wk='cd ~/Desktop/workspace'
 alias td='cd ~/Desktop'
 alias pj='cd ~/Desktop/projects'
-alias js='cd ~/Desktop/joispace'
+alias sp='cd ~/Desktop/space'
 
 # IDE/Editors
 alias c='cursor'
