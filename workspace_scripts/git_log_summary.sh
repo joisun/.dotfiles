@@ -48,6 +48,7 @@ RECURSIVE=false
 SHOW_SUMMARY=false
 VERBOSE=false
 DEDUP=false
+INCLUDE_COPIES=false
 DAYS=""
 BASE_DIR=""
 
@@ -70,6 +71,9 @@ for arg in "$@"; do
             ;;
         --dedup)
             DEDUP=true
+            ;;
+        --include-copies)
+            INCLUDE_COPIES=true
             ;;
         *)
             if [ -z "$DAYS" ]; then
@@ -268,9 +272,9 @@ if [ "$VERBOSE" = true ]; then
     echo ""
 fi
 
-# 第二遍：对于每个远程地址，只保留目录名最短的仓库
+# 第二遍：过滤复制仓库
 if [ "$INCLUDE_COPIES" = false ]; then
-    # 按远程地址分组，保留目录名最短的
+    # 先按远程地址分组，保留目录名最短的
     sort "$REPO_MAP_FILE" | \
     awk -F'|' '
     {
@@ -279,6 +283,7 @@ if [ "$INCLUDE_COPIES" = false ]; then
         repo_name = $3
         name_length = $4
         
+        # 按远程地址分组
         if (!(remote_url in shortest_name_length) || name_length < shortest_name_length[remote_url]) {
             shortest_name_length[remote_url] = name_length
             selected_repos[remote_url] = repo_path "|" repo_name
@@ -293,6 +298,26 @@ if [ "$INCLUDE_COPIES" = false ]; then
     END {
         for (remote_url in selected_repos) {
             print selected_repos[remote_url]
+        }
+    }' | \
+    # 再按名称模式过滤明显的复制仓库
+    awk -F'|' '
+    {
+        repo_path = $1
+        repo_name = $2
+        
+        # 检查是否为明显的复制仓库模式
+        is_copy = 0
+        if (match(repo_name, /-[0-9]+$/)) is_copy = 1
+        if (match(repo_name, /_[0-9]+$/)) is_copy = 1
+        if (match(repo_name, /-(copy|backup|tmp|temp|test|bak|clone)$/)) is_copy = 1
+        if (match(repo_name, /_(copy|backup|tmp|temp|test|bak|clone)$/)) is_copy = 1
+        if (match(repo_name, /-[0-9]{6,8}$/)) is_copy = 1
+        if (match(repo_name, /_[0-9]{6,8}$/)) is_copy = 1
+        
+        # 如果不是明显的复制仓库，则保留
+        if (!is_copy) {
+            print repo_path "|" repo_name
         }
     }' > "$FILTERED_REPOS_FILE"
 else
