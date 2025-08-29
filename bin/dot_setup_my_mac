@@ -1,3 +1,4 @@
 #!/bin/bash
-echo "dot setup start.
-../scripts/setup.sh
+
+~/.dotfiles/scripts/setup.sh
+
