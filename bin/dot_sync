@@ -1,6 +1,6 @@
 #!/bin/bash
 
-git pull origin macos
+git -C ~/.dotfiles pull origin macos
 # 同步一般配置
 ~/.dotfiles/scripts/syncConfigs.sh
 # 同步工作区脚本

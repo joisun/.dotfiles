@@ -16,12 +16,12 @@ alias pj='cd ~/Desktop/projects'
 alias js='cd ~/Desktop/joispace'
 
 # IDE/Editors
-alias ccs='cursor'
+alias c='cursor'
 alias subl="/Applications/Sublime\ Text.app/Contents/SharedSupport/bin/subl"
 
 
 # JS
-alias pp='pnpm'
+alias p='pnpm'
 alias pi='pnpm install'
 alias pa='pnpm add'
 
