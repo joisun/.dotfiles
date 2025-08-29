@@ -16,7 +16,7 @@ alias pj='cd ~/Desktop/projects'
 alias js='cd ~/Desktop/joispace'
 
 # IDE/Editors
-alias cs='cursor'
+alias c='cursor'
 alias subl="/Applications/Sublime\ Text.app/Contents/SharedSupport/bin/subl"
 
 
