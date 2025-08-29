@@ -449,6 +449,7 @@ fi
     topic_counter=1
     repo_counter=1
     commit_counter=1
+    repo_has_commits=false
     
     while IFS='|' read -r date topic repo message; do
         # 跳过空行或不完整的行
@@ -462,6 +463,17 @@ fi
         repo=$(echo "$repo" | tr -d ' ')
         message=$(echo "$message" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
         
+        # 检查是否应该显示这个提交（过滤merge信息）
+        should_show_commit=false
+        if [ "$SHOW_MERGE" = true ] || ! is_merge_commit "$message"; then
+            should_show_commit=true
+        fi
+        
+        # 如果这个提交不应该显示，跳过后续处理
+        if [ "$should_show_commit" = false ]; then
+            continue
+        fi
+        
         # 检查是否是新的日期
         if [ "$current_date" != "$date" ]; then
             current_date="$date"
@@ -470,6 +482,7 @@ fi
             topic_counter=1
             current_topic=""
             current_repo=""
+            repo_has_commits=false
         fi
         
         # 检查是否是新的任务主题
@@ -479,6 +492,7 @@ fi
             topic_counter=$((topic_counter + 1))
             repo_counter=1
             current_repo=""
+            repo_has_commits=false
         fi
         
         # 检查是否是新的项目
@@ -487,13 +501,12 @@ fi
             echo "        $((date_counter-1)).$((topic_counter-1)).$repo_counter $repo"
             repo_counter=$((repo_counter + 1))
             commit_counter=1
+            repo_has_commits=true
         fi
         
-        # 输出提交信息（过滤merge信息）
-        if [ "$SHOW_MERGE" = true ] || ! is_merge_commit "$message"; then
-            echo "            $((date_counter-1)).$((topic_counter-1)).$((repo_counter-1)).$commit_counter $message"
-            commit_counter=$((commit_counter + 1))
-        fi
+        # 输出提交信息
+        echo "            $((date_counter-1)).$((topic_counter-1)).$((repo_counter-1)).$commit_counter $message"
+        commit_counter=$((commit_counter + 1))
         
     done < "$SORTED_FILE"
     
