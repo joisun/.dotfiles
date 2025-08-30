@@ -348,6 +348,7 @@ proxy-groups:
   url: http://www.gstatic.com/generate_204
 rules:    
 - 'DOMAIN-KEYWORD,simboss,DIRECT'
+- 'IP-CIDR,47.121.186.19/8,DIRECT'
 - DOMAIN-SUFFIX,ip-api.com,DIRECT
 - DOMAIN-SUFFIX,ipip.net,DIRECT
 - DOMAIN-SUFFIX,ip138.com,DIRECT
