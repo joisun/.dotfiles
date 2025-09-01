@@ -208,6 +208,7 @@ proxy-groups:
 rules:
   - 'DOMAIN-KEYWORD,simboss,DIRECT'
   - 'IP-CIDR,47.121.186.19/32,DIRECT'
+  - 'DOMAIN-KEYWORD,localdev,DIRECT'
   - 'DOMAIN-SUFFIX,services.googleapis.cn,SELECT'
   - 'DOMAIN-SUFFIX,xn--ngstr-lra8j.com,SELECT'
   - 'DOMAIN,safebrowsing.urlsec.qq.com,DIRECT'
