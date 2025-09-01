@@ -1,0 +1,141 @@
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+    worker_connections 768;
+}
+
+http {
+    # Basic Settings
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    # SSL Settings
+    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE:ECDH:AES:HIGH:!NULL:!aNULL:!MD5:!ADH:!RC4;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:1m;
+    ssl_session_timeout 5m;
+
+    # Logging Settings
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+
+    # Gzip Settings
+    gzip on;
+    gzip_vary on;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    # Virtual Host Configs
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
+
+    # HTTP 服务器 - 处理重定向和 Let's Encrypt 验证
+    server {
+        listen 80;
+        server_name www.sunzy.site sunzy.site me.sunzy.site;
+
+        # Let's Encrypt 验证路径 - 优先级最高
+        location ^~ /.well-known/acme-challenge/ {
+            root /var/www/html;
+            allow all;
+            try_files $uri =404;
+            access_log /var/log/nginx/acme.log;
+        }
+
+        # 其他请求重定向到 HTTPS
+        location / {
+            return 301 https://$host$request_uri;
+        }
+    }
+
+    # 主要的 HTTPS 服务器 - 博客站点 (sunzy.site 和 www.sunzy.site)
+    server {
+        listen 443 ssl http2;
+        server_name sunzy.site www.sunzy.site;
+
+        # SSL 证书配置
+        ssl_certificate /etc/letsencrypt/live/sunzy.site/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/sunzy.site/privkey.pem;
+        include /etc/letsencrypt/options-ssl-nginx.conf;
+        ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+        # 根路径重定向到博客
+        location = / {
+            return 301 https://$host/blog_11ty/;
+        }
+
+        # /blog_11ty/ 路径代理到内部服务器，并重写路径
+        location /blog_11ty/ {
+            rewrite ^/blog_11ty(.*)$ $1 break;
+            proxy_pass http://localhost:5678;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # 其他请求
+        location / {
+            return 301 https://$host/blog_11ty$request_uri;
+        }
+    }
+
+    # 简历页面的 HTTPS 服务器
+    server {
+        listen 443 ssl http2;
+        server_name me.sunzy.site;
+
+        # SSL 证书配置
+        ssl_certificate /etc/letsencrypt/live/sunzy.site/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/sunzy.site/privkey.pem;
+        include /etc/letsencrypt/options-ssl-nginx.conf;
+        ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+        # 根路径重定向到博客
+        location = / {
+            return 301 https://$host/blog_11ty/;
+        }
+
+        # 代理到简历服务
+        location / {
+            proxy_pass http://localhost:83;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Nginx-Proxy true;
+        }
+    }
+
+    # 内部博客服务器
+    server {
+        listen 5678;
+        server_name localhost;
+
+
+        root /var/www/blog_11ty;
+        index index.html;
+
+        # 所有请求都直接处理，不需要路径前缀
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+
+        # 处理静态资源
+        location ~* \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+
+    }
+}
