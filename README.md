@@ -13,11 +13,11 @@ for my macOS
     git clone https://github.com/joi-com/dotfiles.git ~/.dotfiles
     ```
 
-2.  **重载 Shell (Reload Shell)**
-    安装脚本已将 `bin` 目录添加到 `PATH`。为使其生效, 请**重启终端**或执行：
-
+2.  **Setup**
     ```bash
+    ～/.dotfiles/bin/dot_sync
     source ~/.zshrc
+
     ```
 
 #### 日常使用 (Everyday Use)
