@@ -14,6 +14,7 @@ alias wk='cd ~/Desktop/workspace'
 alias td='cd ~/Desktop'
 alias pj='cd ~/Desktop/projects'
 alias sp='cd ~/Desktop/space'
+alias tw='open -a Terminal' # tw . open current directory in new terminal
 
 # IDE/Editors
 alias c='cursor'
